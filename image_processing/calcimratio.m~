@@ -1,0 +1,8 @@
+function [bv1,bv2,av1,av2] = calcimratio(BothV1,BothV2,AudV1,AudV2,VisV1)
+
+%To compare the V1 both, V2 both, and V2 aud responses to V1 Vis
+%
+%Written by D.M. Brady 2/2010
+
+%Ratio between
+

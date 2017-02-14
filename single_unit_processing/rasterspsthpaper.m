@@ -1,0 +1,170 @@
+%Rasters and PSTH for Paper
+%
+%Generates rasters and psth for a paper.
+%
+%Written by D.M. Brady 4/2010
+
+%% Organize Data
+
+[timestamps,numberoftrials] = convert2timestamps(data); 
+%Seperate function in 'Programs for SU' Folder
+%used to organize data into a nicely organized structure
+
+%% Generate Raster Information
+
+window.pre = 200; %Amount of time in msecs before the stimulus we plot
+window.stim = 1000; %Length of stimulus (should be 1 second)
+window.post = 200; %Amount of time in msecs after the stimulus we plot
+
+rasters = {}; %Allocate variable so it is faster
+
+rasters_figure = figure(1);
+hold on
+rectangle('Position',[-200,0,1400,numberoftrials],'FaceColor',[1 1 1]); %White rectangle to delineate blank
+text(1050,numberoftrials-4,'Blank')
+rectangle('Position',[-200,numberoftrials,1400,numberoftrials],'FaceColor',[1 1 200/255]); %Light Yellow
+text(1050,2*numberoftrials-4,'Vis + Aud')
+rectangle('Position',[-200,2*numberoftrials,1400,numberoftrials],'FaceColor',[1 200/255 200/255]); %Light Pink
+text(1050,3*numberoftrials-4,'Auditory')
+rectangle('Position',[-200,3*numberoftrials,1400,numberoftrials],'FaceColor',[200/255 200/255 1]); %Light Blue
+text(1050,4*numberoftrials-4,'Visual')
+xlabel('Time (msecs)')
+preparerasters((4*numberoftrials), window);
+
+% Raster for visual trials
+for i = 1:length(timestamps.vis)
+    rasters.vis{i} = timestamps.spikes(timestamps.spikes > (timestamps.vis(i)-window.pre)...
+        & timestamps.spikes < (timestamps.vis(i)+window.stim+window.post)) - timestamps.vis(i);
+    for j = 1:length(rasters.vis{i})
+        line([rasters.vis{i}(j) rasters.vis{i}(j)], [(3*numberoftrials)+i-1 (3*numberoftrials)+i]);
+    end
+end
+for i = 1:length(timestamps.aud)
+    rasters.aud{i} = timestamps.spikes(timestamps.spikes > (timestamps.aud(i)-window.pre)...
+        & timestamps.spikes < (timestamps.aud(i)+window.stim+window.post)) - timestamps.aud(i);
+    for j = 1:length(rasters.aud{i})
+        line([rasters.aud{i}(j) rasters.aud{i}(j)], [(2*numberoftrials)+i-1 (2*numberoftrials)+i]);
+    end
+end
+for i = 1:length(timestamps.both) 
+    rasters.both{i} = timestamps.spikes(timestamps.spikes > (timestamps.both(i)-window.pre)...
+        & timestamps.spikes < (timestamps.both(i)+window.stim+window.post)) - timestamps.both(i);
+    for j = 1:length(rasters.both{i})
+        line([rasters.both{i}(j) rasters.both{i}(j)], [(numberoftrials)+i-1 (numberoftrials)+i]);
+    end
+end
+for i = 1:length(timestamps.blank)
+    rasters.blank{i} = timestamps.spikes(timestamps.spikes > (timestamps.blank(i)-window.pre)...
+        & timestamps.spikes < (timestamps.blank(i)+window.stim+window.post)) - timestamps.blank(i);
+    for j = 1:length(rasters.blank{i})
+        line([rasters.blank{i}(j) rasters.blank{i}(j)], [i-1 i]);
+    end
+end
+
+%% Generate PSTH
+
+% Use the same pre, stim, and post window as rasters
+
+window.window = 25; %length (in msecs) of bin (can play around)
+window.step = 2; %time difference between centers of windows
+
+% Creates a psth structure for spikes during window of interest. Very similar
+% to rasters structure but have to include window.window to prevent cutting
+% off edges. Not in seperate bins yet, just when spikes occured during
+% window.
+
+psth = {}; %Allocate variable so it is faster
+
+for i = 1:length(timestamps.vis) %Visual trials
+    psth.vis{i} = timestamps.spikes(timestamps.spikes > (timestamps.vis(i)-window.pre-(window.window/2))...
+        & timestamps.spikes < (timestamps.vis(i)+window.stim+window.post-(window.window/2)))...
+        - timestamps.vis(i);
+end
+
+for i = 1:length(timestamps.aud) %Auditory trials
+    psth.aud{i} = timestamps.spikes(timestamps.spikes > (timestamps.aud(i)-window.pre-(window.window/2))...
+        & timestamps.spikes < (timestamps.aud(i)+window.stim+window.post-(window.window/2)))...
+        - timestamps.aud(i);
+end
+
+for i = 1:length(timestamps.both) %Both trials
+    psth.both{i} = timestamps.spikes(timestamps.spikes > (timestamps.both(i)-window.pre-(window.window/2))...
+        & timestamps.spikes < (timestamps.both(i)+window.stim+window.post-(window.window/2)))...
+        - timestamps.both(i);
+end
+
+for i = 1:length(timestamps.blank) %Blank trials
+    psth.blank{i} = timestamps.spikes(timestamps.spikes > (timestamps.blank(i)-window.pre-(window.window/2))...
+        & timestamps.spikes < (timestamps.blank(i)+window.stim+window.post-(window.window/2)))...
+        - timestamps.blank(i);
+end
+
+% Make structure spike_count with number of spikes within each bin
+centers = -window.pre:window.step:(window.stim+window.post); %centers of bins
+
+for i = 1:length(centers)
+    spike_count.vis(i) = 0; %Create new struct of spikes within each bin
+    spike_count.aud(i) = 0;
+    spike_count.both(i) = 0;
+    spike_count.blank(i) = 0;
+    for j = 1:length(psth.vis) %Visual trials
+        spike_count.vis(i) = spike_count.vis(i) + length(find(psth.vis{j} > (centers(i)-(window.window/2))...
+            & psth.vis{j} < (centers(i)+(window.window/2))));
+    end
+
+    for j = 1:length(psth.aud) %Auditory trials
+        spike_count.aud(i) = spike_count.aud(i) + length(find(psth.aud{j} > (centers(i)-(window.window/2))...
+            & psth.aud{j} < (centers(i)+(window.window/2))));
+    end
+
+    for j = 1:length(psth.both) %Both trials
+        spike_count.both(i) = spike_count.both(i) + length(find(psth.both{j} > (centers(i)-(window.window/2))...
+            & psth.both{j} < (centers(i)+(window.window/2))));
+    end
+
+    for j = 1:length(psth.blank) %Blank trials
+        spike_count.blank(i) = spike_count.blank(i) + length(find(psth.blank{j} > (centers(i)-(window.window/2))...
+            & psth.blank{j} < (centers(i)+(window.window/2))));
+    end
+end
+
+%Plot PSTH
+%psth_figure = figure(2);
+%a = subplot(3,1,1);
+%hold on
+%plot(centers,spike_count.vis,'Color',[0 0 1],'LineWidth',1);
+%plot(centers,spike_count.aud,'Color',[1 0 0],'LineWidth',1);
+%plot(centers,spike_count.both,'Color',[0 0 0],'LineWidth',1)
+%plot(centers,spike_count.blank,'g--','LineWidth',1);
+%legend('Visual','Auditory', 'Vis + Aud', 'Blank');
+%preparepsths(spike_count,window);
+%xlabel('Time (msecs)')
+
+psth_figure = figure(2); 
+a = subplot(3,1,1);
+hold on  %Visual
+plot(centers,spike_count.vis,'b');
+plot(centers,spike_count.blank,'g--');
+legend('Stimulus','Blank');
+preparepsths(spike_count,window);
+title('Visual Only')
+
+b = subplot(3,1,2);
+hold on %Auditory
+preparepsths(spike_count,window);
+plot(centers,spike_count.aud,'b-')  
+plot(centers,spike_count.blank,'g--')
+title('Auditory Only')
+
+c = subplot(3,1,3);
+hold on %Both
+preparepsths(spike_count,window);
+plot(centers,spike_count.both,'b-')
+plot(centers,spike_count.blank,'g--')
+title('Visual + Auditory')
+xlabel('Time (msecs)')
+
+%% Save Figure
+
+%saveas(rasters_figure, 'Both - 32410 pen3ch7a','pdf')
+%saveas(psth_figure, 'Both - 32410 pen3ch7a','pdf')

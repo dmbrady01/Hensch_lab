@@ -1,0 +1,49 @@
+function [] = MIsimbootfigure(groups,color,bootstrap,bootstrap_ci,boot_title)
+%MIsimbootfigure   
+%   Makes a histogram and CI of the bootstrap parameter specified
+%
+%   Lambda specifies how many groups.
+%   Color specifies the color cell.
+%   bootstrap is the cell of bootstrap data
+%   bootstrap_ci is the cell of CI data
+%   boot_title is the title of the bootstrap parameter
+
+ 
+figure
+for i = 1:length(groups)
+    
+    %%%%%%%%%%%%%%%%%%%% HISTOGRAM OF BOOTSTRAP MEDIAN OF POSTIVELY MODULATED CELLS %%%%%%%%%%%%%%%%%%%%
+    subplot(1,5,1:3)
+    hold on
+    [count,bin] = hist(bootstrap{i},30);
+    h = bar(bin,count./sum(count));
+    set(h,'FaceColor',color{i})
+%     h = line([median(bootstrap{i}) median(bootstrap{i})],...
+%         [0 max(get(gca,'ylim'))]); %reference line to show alpha of 0.05
+%    set(h,'Color','y','LineStyle','--','LineWidth',2)
+    xlabel(boot_title)
+    ylabel('Normalized Count')
+    title(['Sampling Distributions of the ' boot_title])
+    hold off
+    
+    %%%%%%%%%%%%%%%%%%%%%%%% PLOT OF BOOTSTRAP MEDIAN OF POSTIVELY MODULATED CELLS CI %%%%%%%%%%%%%%%%%%%%
+    subplot(1,5,4:5)
+    hold on
+    title(['Confidence Interval of ' boot_title])
+%     h = bar(i,median(bootstrap{i})); %bar of median
+%     set(h,'FaceColor',color{i})
+    h = line([i-.125 i+.125],[median(bootstrap{i}) median(bootstrap{i})]); %median
+    set(h,'LineWidth',5,'Color',color{i})
+    h = line([i i],[min(bootstrap_ci{i}) max(bootstrap_ci{i})]); %CI for median
+    set(h,'LineWidth',2,'Color',color{i})
+    h = line([i-.125 i+.125],[min(bootstrap_ci{i}) min(bootstrap_ci{i})]); %horizontal bar for min CI of median (2.5%)
+    set(h,'LineWidth',2,'Color',color{i})
+    h = line([i-.125 i+.125],[max(bootstrap_ci{i}) max(bootstrap_ci{i})]); %horizontal bar for max CI of median (97.5%)
+    set(h,'LineWidth',2,'Color',color{i})
+    ylabel(boot_title)
+    xlim([0.5 length(bootstrap_ci)+0.5])
+    hold off
+end
+
+end
+
